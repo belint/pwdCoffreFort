@@ -33,6 +33,9 @@ def authentification():
     else : 
         authentifié = 0
     
+    identifiant = "null"
+    mdp = "null"
+    mdphash = "null"
     return (identifiant, authentifié)
 
 main()
