@@ -1,5 +1,5 @@
 import hashlib
-import mdpauth
+import csv
 from getpass import getpass
 def main():
     # entrer les id et mdp
@@ -7,15 +7,18 @@ def main():
     registered = str(input("Voulez-vous vous connecter ou vous inscrire? (tapez \"connexion\" ou \"inscription\") : "))
     if registered == 'connexion' :
         (identifiant, authentifie) = authentification()
-    else: 
-        (identifiant, authentifie) = inscritpion()
+    elif registered == 'inscription': 
+        (identifiant, authentifie) = inscription()
+    else :
+        print("Mauvaise commande")
+        authentifie = 0
     # print(authentifie)
     while (authentifie == 0) :
         registered = str(input("Voulez-vous vous connecter ou vous inscrire? (tapez \"connexion\" ou \"inscription\") : "))
         if registered == 'connexion' :
             (identifiant, authentifie) = authentification()
         else: 
-            (identifiant, authentifie) = inscritpion()
+            (identifiant, authentifie) = inscription()
     
     print("Bienvenue " + identifiant + "\n")
 
@@ -33,33 +36,40 @@ def authentification():
     # print(id)
     # print(mdpauth.auth)
     # verifier que l'id est dans les les cles de mdpauth
-    if identifiant in mdpauth.auth.keys() :
-        if mdpauth.auth[identifiant] == mdphash :
-            authentifie = 1
-        else : 
-            print("Identifiant ou mot de passe incorrect. Reessayez \n")
-            authentifie = 0
-    else :
-        mdpauth.auth.update(id)
-        authentifie = 0
+    with open('mdpauth.csv', newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            if row['id'] == identifiant :
+                if row['mdp'] == mdphash :
+                    authentifie = 1
+                    break
+                else : 
+                    print("Identifiant ou mot de passe incorrect. Reessayez \n")
+                    authentifie = 0
+            else :
+                authentifie = 0
     
-    mdp = ""
-    mdphash = ""
     return (identifiant, authentifie)
 
-def inscritpion():
+def inscription():
     identifiant = str(input("Veuillez rentrez un identifiant : "))
     mdp = str(getpass("Veuillez rentrez un mot de passe : "))
     mdphash = (hashlib.sha256(mdp.encode('utf-8'))).hexdigest()
     id = {identifiant : mdphash}
-    if identifiant in mdpauth.auth.keys() :
-        print("Cette identifiant existe déjà! Veuillez-vous connecter")
-        authentifie = 0
-    else:
+    with open('mdpauth.csv', 'r', newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            if row['id'] == identifiant :
+                print("Cet identifiant existe déjà! Veuillez-vous connecter")
+                authentifie = 0
+                return (identifiant, authentifie)
+    with open('mdpauth.csv', 'a', newline='') as csvfile:
         ### AJout dans le dictionnaire
         authentifie = 1
-    identifiant = ""
-    mdp = ""
-    mdphash =""
+        fieldnames = ['id', 'mdp']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        # writer.writeheader()
+        writer.writerow({'id': identifiant, 'mdp': mdphash})
     return (identifiant, authentifie)
 main()
