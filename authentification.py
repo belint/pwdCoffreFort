@@ -22,6 +22,11 @@ def main():
     
     print("Bienvenue " + identifiant + "\n")
 
+    while (authentifie == 1):
+        authentifie = action(identifiant)
+    print ("AU REVOUARE")
+
+
 
 def authentification():
     identifiant = str(input("Identifiant : "))
@@ -72,4 +77,58 @@ def inscription():
         # writer.writeheader()
         writer.writerow({'id': identifiant, 'mdp': mdphash})
     return (identifiant, authentifie)
+
+
+def action(identifiant):
+    entree = str(input("Que souhaitez-vous faire ? \n Tapez \"enregistrer\" pour enregistrer un nouveau mot de passe \n Tapez \"consulter\" pour consulter un mot de passe \n Tapez \"deconnexion\" pour vous déconnecter \n"))
+    if entree == 'enregistrer' :
+        enregistrer(identifiant)
+        return 1
+    elif entree == 'consulter': 
+        consulter(identifiant)
+        return 1
+    elif entree == 'deconnexion' : 
+        return 0
+    else :
+        print("Mauvaise commande")
+        return 1
+
+
+def enregistrer(identifiant) :
+    print("Fonction enregistrer")
+    site = str(input("Veuillez rentrez le site associé au mot de passe : "))
+    id = str(input("Veuillez rentrez l'id : "))
+    mdp = str(getpass("Veuillez rentrez le mot de passe : "))
+    # mdphash = (hashlib.sha256(mdp.encode('utf-8'))).hexdigest()
+    # id = {identifiant : mdphash}
+    with open('mdp.csv', 'r', newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            if row['user'] == identifiant and row['site'] == site:
+                print("Vous avez déjà un mot de passe pour ce site")
+                return 
+    with open('mdp.csv', 'a', newline='') as csvfile:
+        ### AJout dans le dictionnaire
+        fieldnames = ['user', 'site', 'id', 'mdp']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        # writer.writeheader()
+        writer.writerow({'user' : identifiant, 'site' : site, 'id': id, 'mdp': mdp})
+        print("Le mot de passe a bien été ajouté ! \n")
+
+def consulter(identifiant) : 
+    print ("Fonction consulter")
+    site = str(input("Veuillez rentrez le site associé au mot de passe à consulter : "))
+    with open('mdp.csv', 'r', newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            if row['user'] == identifiant and row['site'] == site:
+                print("L'id est : " + row['id'] + "\n")
+                print("Le mot de passe est : " + row['mdp'] + "\n")
+                return 
+        print("Vous n'avez pas de mot de pass associé à ce site !")
+
+
+
+
 main()
