@@ -1,6 +1,10 @@
 import hashlib
 import csv
 from getpass import getpass
+import os
+import math
+from Crypto.Cipher import AES
+import ast
 def main():
     # entrer les id et mdp
     print ("Connexion au coffre fort \n")
@@ -47,6 +51,15 @@ def authentification():
             if row['id'] == identifiant :
                 if row['mdp'] == mdphash :
                     authentifie = 1
+                    encrypted = ast.literal_eval(row['key'])
+                    print(type(encrypted))
+                    salt = encrypted[0:16]
+                    print(salt)
+                    derived = hashlib.pbkdf2_hmac('sha256', mdp.encode('utf-8'), salt, 100000, dklen=48)
+                    iv = derived[0:16]
+                    key = derived[16:]
+                    keyuser = AES.new(key, AES.MODE_CFB, iv).decrypt(encrypted[16:])
+                    print(keyuser)
                     break
                 else : 
                     print("Identifiant ou mot de passe incorrect. Reessayez \n")
@@ -71,11 +84,21 @@ def inscription():
     with open('mdpauth.csv', 'a', newline='') as csvfile:
         ### AJout dans le dictionnaire
         authentifie = 1
-        fieldnames = ['id', 'mdp']
+        keyuser = os.urandom(32)
+        salt = os.urandom(16)
+        derived = hashlib.pbkdf2_hmac('sha256', mdp.encode('utf-8'), salt, 100000, dklen=48)
+        iv = derived[0:16]
+        key = derived[16:]
+        encrypted = salt + AES.new(key, AES.MODE_CFB, iv).encrypt(keyuser)
+        print(keyuser)
+        print(salt)
+        print(encrypted)
+
+        fieldnames = ['id', 'mdp', 'key']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         # writer.writeheader()
-        writer.writerow({'id': identifiant, 'mdp': mdphash})
+        writer.writerow({'id': identifiant, 'mdp': mdphash, 'key' : encrypted})
     return (identifiant, authentifie)
 
 
