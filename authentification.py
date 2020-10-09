@@ -10,7 +10,7 @@ def main():
     print ("Connexion au coffre fort \n")
     registered = str(input("Voulez-vous vous connecter ou vous inscrire? (tapez \"connexion\" ou \"inscription\") : "))
     if registered == 'connexion' :
-        (identifiant, authentifie) = authentification()
+        (identifiant, authentifie, key) = authentification()
     elif registered == 'inscription': 
         (identifiant, authentifie) = inscription()
     else :
@@ -20,14 +20,14 @@ def main():
     while (authentifie == 0) :
         registered = str(input("Voulez-vous vous connecter ou vous inscrire? (tapez \"connexion\" ou \"inscription\") : "))
         if registered == 'connexion' :
-            (identifiant, authentifie) = authentification()
+            (identifiant, authentifie, key) = authentification()
         else: 
             (identifiant, authentifie) = inscription()
     
     print("Bienvenue " + identifiant + "\n")
-
+    print(key)
     while (authentifie == 1):
-        authentifie = action(identifiant)
+        authentifie = action(identifiant, key)
     print ("AU REVOUARE")
 
 
@@ -67,7 +67,7 @@ def authentification():
             else :
                 authentifie = 0
     
-    return (identifiant, authentifie)
+    return (identifiant, authentifie, keyuser)
 
 def inscription():
     identifiant = str(input("Veuillez rentrez un identifiant : "))
@@ -102,13 +102,13 @@ def inscription():
     return (identifiant, authentifie)
 
 
-def action(identifiant):
+def action(identifiant, key):
     entree = str(input("Que souhaitez-vous faire ? \n Tapez \"enregistrer\" pour enregistrer un nouveau mot de passe \n Tapez \"consulter\" pour consulter un mot de passe \n Tapez \"deconnexion\" pour vous déconnecter \n"))
     if entree == 'enregistrer' :
-        enregistrer(identifiant)
+        enregistrer(identifiant, key)
         return 1
     elif entree == 'consulter': 
-        consulter(identifiant)
+        consulter(identifiant, key)
         return 1
     elif entree == 'deconnexion' : 
         return 0
@@ -117,7 +117,7 @@ def action(identifiant):
         return 1
 
 
-def enregistrer(identifiant) :
+def enregistrer(identifiant, keyuser) :
     print("Fonction enregistrer")
     site = str(input("Veuillez rentrez le site associé au mot de passe : "))
     id = str(input("Veuillez rentrez l'id : "))
@@ -131,23 +131,38 @@ def enregistrer(identifiant) :
                 print("Vous avez déjà un mot de passe pour ce site")
                 return 
     with open('mdp.csv', 'a', newline='') as csvfile:
+        salt = os.urandom(16)
+        derived = hashlib.pbkdf2_hmac('sha256', keyuser, salt, 100000, dklen=48)
+        iv = derived[0:16]
+        key = derived[16:]
+        encrypted = salt + AES.new(key, AES.MODE_CFB, iv).encrypt(mdp.encode('utf-8'))
+        print(keyuser)
+        print(salt)
+        print(encrypted)
         ### AJout dans le dictionnaire
         fieldnames = ['user', 'site', 'id', 'mdp']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         # writer.writeheader()
-        writer.writerow({'user' : identifiant, 'site' : site, 'id': id, 'mdp': mdp})
+        writer.writerow({'user' : identifiant, 'site' : site, 'id': id, 'mdp': encrypted})
         print("Le mot de passe a bien été ajouté ! \n")
 
-def consulter(identifiant) : 
+def consulter(identifiant, keyuser) : 
     print ("Fonction consulter")
     site = str(input("Veuillez rentrez le site associé au mot de passe à consulter : "))
     with open('mdp.csv', 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             if row['user'] == identifiant and row['site'] == site:
+                encrypted = ast.literal_eval(row['mdp'])
+                salt = encrypted[0:16]
+                derived = hashlib.pbkdf2_hmac('sha256', keyuser, salt, 100000, dklen=48)
+                iv = derived[0:16]
+                key = derived[16:]
+                mdp = AES.new(key, AES.MODE_CFB, iv).decrypt(encrypted[16:])
+                print(keyuser)
                 print("L'id est : " + row['id'] + "\n")
-                print("Le mot de passe est : " + row['mdp'] + "\n")
+                print("Le mot de passe est : " + mdp.decode() + "\n")
                 return 
         print("Vous n'avez pas de mot de pass associé à ce site !")
 
