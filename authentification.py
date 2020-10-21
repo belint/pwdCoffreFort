@@ -1,3 +1,4 @@
+# coding=UTF-8
 import hashlib
 import csv
 from getpass import getpass
@@ -5,6 +6,10 @@ import os
 import math
 from Crypto.Cipher import AES
 import ast
+# from pythonfuzz.main import PythonFuzz
+
+
+# @PythonFuzz
 def main():
     # entrer les id et mdp
     print ("Connexion au coffre fort \n")
@@ -21,8 +26,11 @@ def main():
         registered = str(input("Voulez-vous vous connecter ou vous inscrire? (tapez \"connexion\" ou \"inscription\") : "))
         if registered == 'connexion' :
             (identifiant, authentifie, key) = authentification()
-        else: 
+        elif registered == 'inscription' :
             (identifiant, authentifie) = inscription()
+        else : 
+            print("Mauvaise commande")
+            authentifie = 0
     
     print("Bienvenue " + identifiant + "\n")
     print(key)
@@ -35,13 +43,12 @@ def main():
 def authentification():
     identifiant = str(input("Identifiant : "))
     mdp = str(getpass("password: "))
-    
+    keyuser = ''
     # print('Identifiant = ' + identifiant + '\n')
     # print('mdp = ' + mdp + '\n')
     mdphash = (hashlib.sha256(mdp.encode('utf-8'))).hexdigest()
     # print('mdp hashe = ' + mdphash)
     # print(mdphash)
-    id = {identifiant : mdphash}
     # print(id)
     # print(mdpauth.auth)
     # verifier que l'id est dans les les cles de mdpauth
@@ -60,20 +67,15 @@ def authentification():
                     key = derived[16:]
                     keyuser = AES.new(key, AES.MODE_CFB, iv).decrypt(encrypted[16:])
                     print(keyuser)
-                    break
-                else : 
-                    print("Identifiant ou mot de passe incorrect. Reessayez \n")
-                    authentifie = 0
-            else :
-                authentifie = 0
-    
+                    return (identifiant, authentifie, keyuser)
+    authentifie = 0
+    print("Identifiant ou mot de passe incorrect. Reessayez \n")
     return (identifiant, authentifie, keyuser)
 
 def inscription():
     identifiant = str(input("Veuillez rentrez un identifiant : "))
     mdp = str(getpass("Veuillez rentrez un mot de passe : "))
     mdphash = (hashlib.sha256(mdp.encode('utf-8'))).hexdigest()
-    id = {identifiant : mdphash}
     with open('mdpauth.csv', 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
@@ -167,6 +169,6 @@ def consulter(identifiant, keyuser) :
         print("Vous n'avez pas de mot de pass associé à ce site !")
 
 
-
-
-main()
+if __name__ == "__main__":
+    # execute only if run as a script
+    main()
